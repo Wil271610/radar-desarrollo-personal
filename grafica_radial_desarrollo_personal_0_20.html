@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Radar de Desarrollo Personal</title>
+<style>
+body{margin:0;background:#090b10;color:#f3f5f7;font-family:Arial,sans-serif}.wrap{max-width:1050px;margin:auto;padding:28px 20px}
+h1{text-align:center;margin:0;font-size:28px}.sub{text-align:center;color:#9aa4b2;margin:8px 0 24px}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:25px;align-items:center}.panel{background:#11151d;border:1px solid #252c38;border-radius:16px;padding:20px}
+h2{font-size:17px;margin:0 0 18px}.control{display:grid;grid-template-columns:1fr 48px 30px 30px;gap:7px;align-items:center;margin:12px 0}
+label{font-size:14px}.control input[type=range]{width:100%;accent-color:#8b5cf6}.num{width:48px;box-sizing:border-box;background:#0b0e14;color:white;border:1px solid #303743;border-radius:7px;padding:7px 2px;text-align:center}
+button{width:30px;height:30px;background:#0b0e14;color:white;border:1px solid #303743;border-radius:7px;cursor:pointer}button:hover{background:#222936}
+.score{text-align:center;border-top:1px solid #252c38;margin-top:20px;padding-top:18px}.total{font-size:34px;font-weight:bold}.pct{color:#8ee28e;margin-top:4px}
+.actions{display:flex;gap:8px;margin-top:15px}.actions button{width:auto;height:auto;padding:9px 12px;flex:1}
+canvas{width:100%;max-width:650px;aspect-ratio:1;display:block;margin:auto}.note{text-align:center;color:#77808d;font-size:12px;margin-top:10px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.panel{max-width:600px;margin:auto;width:100%;box-sizing:border-box}}
+</style></head><body>
+<div class="wrap"><h1>GRÁFICA RADIAL — DESARROLLO PERSONAL</h1>
+<div class="sub">Evalúa cada área del 0 al 20 y visualiza tu equilibrio personal.</div>
+<div class="layout"><div class="panel"><h2>Evalúa cada área</h2><div id="controls"></div>
+<div class="score"><div class="total" id="total">0 / 160</div><div class="pct" id="pct">0% de tu máximo</div></div>
+<div class="actions"><button id="reset">Restablecer</button><button id="save">Guardar</button></div>
+<div class="note">Los valores se guardan en este navegador.</div></div>
+<canvas id="radar" width="700" height="700"></canvas></div></div>
+<script>
+const cats=[["Social",14],["Salud (mental y física)",16],["Mentalidad",15],["Productividad",13],["Estudio / Aprendizaje",17],["Hobbies",12],["Amor",11],["Dinero",10]];
+const saved=JSON.parse(localStorage.getItem("radarPersonal20")||"null");
+if(Array.isArray(saved)&&saved.length===cats.length)cats.forEach((c,i)=>c[1]=Math.max(0,Math.min(20,+saved[i]||0)));
+const box=document.getElementById("controls");
+cats.forEach((c,i)=>{const d=document.createElement("div");d.className="control";d.innerHTML=
+`<div><label>${c[0]}</label><input id="r${i}" type="range" min="0" max="20" value="${c[1]}"></div>
+<input id="n${i}" class="num" type="number" min="0" max="20" value="${c[1]}"><button>−</button><button>+</button>`;
+box.appendChild(d);const r=d.querySelector("#r"+i),n=d.querySelector("#n"+i),b=d.querySelectorAll("button");
+r.oninput=()=>{n.value=r.value;draw()};n.oninput=()=>{let v=Math.max(0,Math.min(20,+n.value||0));n.value=v;r.value=v;draw()};
+b[0].onclick=()=>setv(i,+r.value-1);b[1].onclick=()=>setv(i,+r.value+1)});
+function setv(i,v){v=Math.max(0,Math.min(20,v));document.getElementById("r"+i).value=v;document.getElementById("n"+i).value=v;draw()}
+function vals(){return cats.map((_,i)=>+document.getElementById("r"+i).value)}
+function draw(){const c=document.getElementById("radar"),x=c.getContext("2d"),w=c.width,h=c.height,cx=w/2,cy=h/2+8,R=235,N=cats.length;
+x.clearRect(0,0,w,h);
+for(let l=1;l<=4;l++){let r=R*l/4;x.beginPath();for(let i=0;i<N;i++){let a=-Math.PI/2+i*2*Math.PI/N,px=cx+Math.cos(a)*r,py=cy+Math.sin(a)*r;i?x.lineTo(px,py):x.moveTo(px,py)}x.closePath();x.strokeStyle="#303743";x.stroke()}
+for(let i=0;i<N;i++){let a=-Math.PI/2+i*2*Math.PI/N;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);x.strokeStyle="#303743";x.stroke()}
+x.font="12px Arial";x.fillStyle="#77808d";x.textAlign="left";[5,10,15,20].forEach(v=>x.fillText(v,cx+5,cy-R*v/20));
+let v=vals();x.beginPath();v.forEach((q,i)=>{let a=-Math.PI/2+i*2*Math.PI/N,r=R*q/20,px=cx+Math.cos(a)*r,py=cy+Math.sin(a)*r;i?x.lineTo(px,py):x.moveTo(px,py)});x.closePath();
+let g=x.createLinearGradient(0,0,w,h);g.addColorStop(0,"rgba(139,92,246,.35)");g.addColorStop(1,"rgba(34,211,238,.20)");x.fillStyle=g;x.fill();x.strokeStyle="#a78bfa";x.lineWidth=3;x.stroke();
+v.forEach((q,i)=>{let a=-Math.PI/2+i*2*Math.PI/N,r=R*q/20,px=cx+Math.cos(a)*r,py=cy+Math.sin(a)*r;x.beginPath();x.arc(px,py,6,0,Math.PI*2);x.fillStyle="#c4b5fd";x.fill();x.strokeStyle="#fff";x.lineWidth=2;x.stroke()});
+x.font="600 15px Arial";cats.forEach((c,i)=>{let a=-Math.PI/2+i*2*Math.PI/N,px=cx+Math.cos(a)*(R+52),py=cy+Math.sin(a)*(R+52);x.textAlign=Math.cos(a)>.25?"left":Math.cos(a)<-.25?"right":"center";x.fillStyle="#f1f3f5";x.fillText(c[0],px,py);x.font="600 13px Arial";x.fillStyle="#9aa4b2";x.fillText(v[i]+" / 20",px,py+20);x.font="600 15px Arial"});
+let total=v.reduce((a,b)=>a+b,0);document.getElementById("total").textContent=total+" / 160";document.getElementById("pct").textContent=Math.round(total/160*100)+"% de tu máximo"}
+document.getElementById("save").onclick=()=>localStorage.setItem("radarPersonal20",JSON.stringify(vals()));
+document.getElementById("reset").onclick=()=>{localStorage.removeItem("radarPersonal20");cats.forEach((c,i)=>setv(i,c[1]))};draw();
+</script></body></html>
